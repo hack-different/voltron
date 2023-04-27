@@ -31,6 +31,8 @@ log = logging.getLogger('debugger')
 
 MAX_DEREF = 16
 
+NORMALIZED_ARCHS = { "aarch64": "arm64", "i386": "x86", "x86_64h": "x86_64" }
+
 if HAVE_LLDB:
     class LLDBAdaptor(DebuggerAdaptor):
         """
@@ -70,10 +72,10 @@ if HAVE_LLDB:
             """
 
             s = triple.split("-")
-            arch, platform, abi = s[0], s[1], '-'.join(s[2:])
-            if arch == "x86_64h":
-                arch = "x86_64"
-            return (arch, platform, abi)
+            cpu, platform, abi = s[0], s[1], '-'.join(s[2:])
+            if cpu in NORMALIZED_ARCHS:
+                cpu = NORMALIZED_ARCHS[cpu]
+            return (cpu, platform, abi)
 
         def version(self):
             """
@@ -108,8 +110,9 @@ if HAVE_LLDB:
                 d["arch"], _, _ = self.normalize_triple(t.triple)
             except:
                 d["arch"] = None
-            if d["arch"] == 'i386':
-                d["arch"] = 'x86'
+            if d["arch"] in NORMALIZED_ARCHS:
+                d["arch"] = NORMALIZED_ARCHS[d["arch"]]
+
             d["byte_order"] = 'little' if t.byte_order == lldb.eByteOrderLittle else 'big'
             d["addr_size"] = t.addr_size
 
